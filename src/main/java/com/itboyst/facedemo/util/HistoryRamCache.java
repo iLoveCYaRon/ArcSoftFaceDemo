@@ -3,6 +3,7 @@ package com.itboyst.facedemo.util;
 import com.google.common.collect.Lists;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,6 +33,13 @@ public class HistoryRamCache {
     }
 
     public static List<History> getHistoryList(String id) {
+        List<History> result = new ArrayList<>();
+        if(id.equals("admin")) {
+            for(List<History> list :historyMap.values()) {
+                result.addAll(list);
+            }
+            return result;
+        }
         return historyMap.get(id);
     }
 

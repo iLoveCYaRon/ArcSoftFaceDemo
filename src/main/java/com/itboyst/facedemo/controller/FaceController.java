@@ -27,6 +27,7 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+
 @Controller
 @Slf4j
 public class FaceController {
@@ -250,10 +251,10 @@ public class FaceController {
      * @param id 人名
      * @return 返回 {data:签到历史} 签到历史可空
      */
-    @RequestMapping(value = "/historyList", method = RequestMethod.GET)
+    @RequestMapping(value = "/historyList", method = RequestMethod.POST)
     @ResponseBody
     public Response<List<HistoryRamCache.History>> historyList(String id) {
-        if(HistoryRamCache.getHistoryList(id) == null) {
+        if(!id.equals("admin") || HistoryRamCache.getHistoryList(id) == null) {
             return Response.newSuccessResponse(null);
         }
         return Response.newSuccessResponse(HistoryRamCache.getHistoryList(id));
@@ -283,6 +284,7 @@ public class FaceController {
         //将字符串解码回二进制图片数据
         byte[] bytes = Base64Util.base64ToBytes(image);
         ImageInfo rgbData = ImageFactory.getRGBData(bytes);
+
         //检测提取人脸特征，未提取到人脸返回fail
         List<FaceInfo> faceInfos = faceEngineService.detectFaces(rgbData);
         if (!faceInfos.isEmpty()) {
@@ -292,6 +294,13 @@ public class FaceController {
             userInfo.setFaceId(name);
             userInfo.setName(name);
             userInfo.setFaceFeature(feature);
+
+            //获取当前系统时间
+            Date date = new Date();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String day = dateFormat.format(date);
+
+            userInfo.setRegisterTime(day);
             UserRamCache.addUser(userInfo);
             HistoryRamCache.addHistory(name);
             return Response.newSuccessResponse(true);
