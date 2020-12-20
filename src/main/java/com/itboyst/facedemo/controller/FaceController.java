@@ -44,7 +44,8 @@ public class FaceController {
         Map<String, String> fileMap = Maps.newHashMap();
         fileMap.put("zhao1", "赵丽颖");
         fileMap.put("yang1", "杨紫");
-
+        fileMap.put("wang", "wang");
+        fileMap.put("jie", "wang2");
         for (String f : fileMap.keySet()) {
             ClassPathResource resource = new ClassPathResource("static/images/" + f +  ".jpg");
             InputStream inputStream = null;
@@ -277,8 +278,8 @@ public class FaceController {
     //TODO: 检查ID是否已存在
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     @ResponseBody
-    public Response<Map<String,String>> register(String image, String name) {
-        Map<String, String> map = new HashMap<String, String>();
+    public Response<Boolean> register(String image, String name) {
+
         //将字符串解码回二进制图片数据
         byte[] bytes = Base64Util.base64ToBytes(image);
         ImageInfo rgbData = ImageFactory.getRGBData(bytes);
@@ -287,15 +288,15 @@ public class FaceController {
         if (!faceInfos.isEmpty()) {
             byte[] feature = faceEngineService.extractFaceFeature(rgbData, faceInfos.get(0));
 
-            UserRamCache.UserInfo userInfo = new UserRamCache.UserInfo();
+            UserRamCache.UserInfo userInfo = new UserCompareInfo();
             userInfo.setFaceId(name);
             userInfo.setName(name);
             userInfo.setFaceFeature(feature);
             UserRamCache.addUser(userInfo);
-            map.put("success", "true");
+            HistoryRamCache.addHistory(name);
+            return Response.newSuccessResponse(true);
         }
-        map.put("fail", "false");
-        return Response.newSuccessResponse(map);
+        return Response.newSuccessResponse(false);
     }
 
 }
