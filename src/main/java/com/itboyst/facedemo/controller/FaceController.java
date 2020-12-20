@@ -186,7 +186,7 @@ public class FaceController {
         //将字符串解码回二进制图片数据
         byte[] bytes = Base64Util.base64ToBytes(image);
         ImageInfo rgbData = ImageFactory.getRGBData(bytes);
-      
+
         return Response.newSuccessResponse(getSignResult(id, rgbData));
     }
 
@@ -235,7 +235,11 @@ public class FaceController {
         List<FaceInfo> faceInfos = faceEngineService.detectFaces(imageInfo);
         if (!faceInfos.isEmpty()) {
             byte[] feature = faceEngineService.extractFaceFeature(imageInfo, faceInfos.get(0));
-            if (faceEngineService.faceRecognition(feature, UserRamCache.getUserById(id), 0.8f) != null) {
+            Long time1 = System.currentTimeMillis();
+            UserCompareInfo temp = faceEngineService.faceRecognition(feature, UserRamCache.getUserById(id), 0.8f);
+            Long time2 = System.currentTimeMillis() - time1;
+            logger.info("recognizeFeature: " + time2 );
+            if ( temp!= null) {
 
                 //获取当前系统时间
                 Date date = new Date();
@@ -288,9 +292,12 @@ public class FaceController {
     @ResponseBody
     public Response<Boolean> register1(String image, String id) throws IOException {
         //将字符串解码回二进制图片数据
+
         byte[] bytes = Base64Util.base64ToBytes(image);
+        Long time1 = System.currentTimeMillis();
         ImageInfo rgbData = ImageFactory.getRGBData(bytes);
-        logger.info("sd");
+        Long time2 = System.currentTimeMillis() - time1;
+        logger.info("toRgb: " + time2);
         return Response.newSuccessResponse(getRegisterResult(id, rgbData));
     }
 
@@ -307,14 +314,23 @@ public class FaceController {
     /* 获取注册结果 */
     private Boolean getRegisterResult(String id, ImageInfo imageInfo) throws IOException {
         //检测提取人脸特征，未提取到人脸返回fail
+        Long time1 = System.currentTimeMillis();
         List<FaceInfo> faceInfos = faceEngineService.detectFaces(imageInfo);
-        if (!faceInfos.isEmpty()) {
-            byte[] feature = faceEngineService.extractFaceFeature(imageInfo, faceInfos.get(0));
+        Long time2 = System.currentTimeMillis() - time1;
+        logger.info("DetectFace: " + time2);
 
+        if (!faceInfos.isEmpty()) {
+            Long time3 = System.currentTimeMillis();
+            byte[] feature = faceEngineService.extractFaceFeature(imageInfo, faceInfos.get(0));
+            Long time4 = System.currentTimeMillis() - time3;
+            logger.info("extraFace: " + time4);
             UserRamCache.UserInfo userInfo = new UserCompareInfo();
             userInfo.setFaceId(id);
             userInfo.setName(id);
+                Long time5 = System.currentTimeMillis();
             userInfo.setFaceFeature(feature);
+                Long time6 = System.currentTimeMillis() - time5;
+                logger.info("SaveFaceFeature: " + time6);
 
             //获取当前系统时间
             Date date = new Date();
