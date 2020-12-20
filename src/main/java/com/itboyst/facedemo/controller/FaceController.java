@@ -202,12 +202,12 @@ public class FaceController {
      */
     @RequestMapping(value = "/sign2", method = RequestMethod.POST)
     @ResponseBody
-    public Response<Boolean> signWithImageData(String imageData,int width, int height, String id) throws IOException, ClassNotFoundException {
+    public Response<Boolean> signWithImageData(String imageData,String width, String height, String id) throws IOException, ClassNotFoundException {
         if(UserRamCache.getUserById(id) == null) {
             return Response.newSuccessResponse(false);
         }
 
-        return Response.newSuccessResponse(getSignResult(id, processImageInfo(imageData, width, height)));
+        return Response.newSuccessResponse(getSignResult(id, processImageInfo(imageData, Integer.valueOf(width), Integer.valueOf(height))));
     }
 
     //将传入的数据处理为ImageInfo对象
@@ -297,9 +297,9 @@ public class FaceController {
     /* 注册接口2 */
     @RequestMapping(value = "/register2", method = RequestMethod.POST)
     @ResponseBody
-    public Response<Boolean> registerWithData(String imageData,int width, int height, String id) throws IOException {
+    public Response<Boolean> registerWithData(String imageData,String width, String height, String id) throws IOException {
         //将字符串处理为imageInfo
-        ImageInfo imageInfo = processImageInfo(imageData, width, height);
+        ImageInfo imageInfo = processImageInfo(imageData, Integer.valueOf(width), Integer.valueOf(height));
 
         return Response.newSuccessResponse(getRegisterResult(id, imageInfo));
     }
