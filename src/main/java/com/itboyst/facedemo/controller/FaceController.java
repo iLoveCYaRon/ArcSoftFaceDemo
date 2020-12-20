@@ -13,10 +13,13 @@ import com.itboyst.facedemo.entity.ProcessInfo;
 import com.itboyst.facedemo.entity.UserCompareInfo;
 import com.itboyst.facedemo.rpc.Response;
 import com.itboyst.facedemo.service.FaceEngineService;
+import com.itboyst.facedemo.service.impl.FaceEngineServiceImpl;
 import com.itboyst.facedemo.util.Base64Util;
 import com.itboyst.facedemo.util.HistoryRamCache;
 import com.itboyst.facedemo.util.UserRamCache;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -32,6 +35,8 @@ import java.text.SimpleDateFormat;
 @Controller
 @Slf4j
 public class FaceController {
+
+    public final static Logger logger = LoggerFactory.getLogger(FaceController.class);
 
     @Autowired
     private FaceEngineService faceEngineService;
@@ -279,20 +284,20 @@ public class FaceController {
   
     /* 注册接口1 */
     //TODO: 检查ID是否已存在
-    @RequestMapping(value = "/register1", method = RequestMethod.POST)
+    @RequestMapping(value = "/register", method = RequestMethod.POST)
     @ResponseBody
-    public Response<Boolean> register1(String image, String name) {
+    public Response<Boolean> register1(String image, String id) throws IOException {
         //将字符串解码回二进制图片数据
         byte[] bytes = Base64Util.base64ToBytes(image);
         ImageInfo rgbData = ImageFactory.getRGBData(bytes);
-
+        logger.info("sd");
         return Response.newSuccessResponse(getRegisterResult(id, rgbData));
     }
 
     /* 注册接口2 */
     @RequestMapping(value = "/register2", method = RequestMethod.POST)
     @ResponseBody
-    public Response<Map<String,String>> registerWithData(String imageData,int width, int height, String id) throws IOException {
+    public Response<Boolean> registerWithData(String imageData,int width, int height, String id) throws IOException {
         //将字符串处理为imageInfo
         ImageInfo imageInfo = processImageInfo(imageData, width, height);
 
@@ -300,8 +305,7 @@ public class FaceController {
     }
 
     /* 获取注册结果 */
-    private Map<String,String> getRegisterResult(String id, ImageInfo imageInfo) throws IOException {
-        Map<String, String> map = new HashMap<String, String>();
+    private Boolean getRegisterResult(String id, ImageInfo imageInfo) throws IOException {
         //检测提取人脸特征，未提取到人脸返回fail
         List<FaceInfo> faceInfos = faceEngineService.detectFaces(imageInfo);
         if (!faceInfos.isEmpty()) {
@@ -310,6 +314,7 @@ public class FaceController {
             UserRamCache.UserInfo userInfo = new UserCompareInfo();
             userInfo.setFaceId(id);
             userInfo.setName(id);
+            userInfo.setFaceFeature(feature);
 
             //获取当前系统时间
             Date date = new Date();
@@ -317,24 +322,13 @@ public class FaceController {
             String day = dateFormat.format(date);
 
             userInfo.setRegisterTime(day);
-            UserRamCache.addUser(userInfo);
 
-            //将人脸图片以字符串形式保存到本地
-            //String fileName = id;
-            //String filePath = this.getClass().getResource("/").getPath();
-            //File record = new File(filePath,fileName);
-            //BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(record)));
-            //writer.write(imageInfo.toString());
-            //writer.flush();
-            //writer.close();
-            map.put("success", "true");
+            UserRamCache.addUser(userInfo);
+            HistoryRamCache.addHistory(id);
+
+            return true;
         }
-        map.put("fail", "false");
-        return map;
-            HistoryRamCache.addHistory(name);
-            return Response.newSuccessResponse(true);
-        }
-        return Response.newSuccessResponse(false);
+        return false;
 
     }
 }
