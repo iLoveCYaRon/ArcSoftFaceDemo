@@ -42,5 +42,6 @@ public class UserRamCache {
         private String name;
         private byte[] faceFeature;
         private String registerTime;
+        private int count;
     }
 }

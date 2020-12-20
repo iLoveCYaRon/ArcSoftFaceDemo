@@ -237,7 +237,8 @@ public class FaceController {
                 String day = dateFormat.format(date);
                 //为该id的签到历史添加一项
                 HistoryRamCache.addHistoryItem(id, new HistoryRamCache.History(id, day));
-
+                //为该id的签到次数加一
+                UserRamCache.getUserById(id).setCount(UserRamCache.getUserById(id).getCount()+1);
                 return true;
             }
         }
