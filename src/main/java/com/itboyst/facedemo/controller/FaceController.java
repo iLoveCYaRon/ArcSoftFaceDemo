@@ -24,8 +24,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.text.SimpleDateFormat;
 import java.util.*;
+import java.text.SimpleDateFormat;
+
 
 
 @Controller
@@ -276,25 +277,39 @@ public class FaceController {
         return Response.newSuccessResponse(UserRamCache.getUserList());
     }
   
-    //注册接口
+    /* 注册接口1 */
     //TODO: 检查ID是否已存在
-    @RequestMapping(value = "/register", method = RequestMethod.POST)
+    @RequestMapping(value = "/register1", method = RequestMethod.POST)
     @ResponseBody
-    public Response<Boolean> register(String image, String name) {
-
+    public Response<Boolean> register1(String image, String name) {
         //将字符串解码回二进制图片数据
         byte[] bytes = Base64Util.base64ToBytes(image);
         ImageInfo rgbData = ImageFactory.getRGBData(bytes);
 
+        return Response.newSuccessResponse(getRegisterResult(id, rgbData));
+    }
+
+    /* 注册接口2 */
+    @RequestMapping(value = "/register2", method = RequestMethod.POST)
+    @ResponseBody
+    public Response<Map<String,String>> registerWithData(String imageData,int width, int height, String id) throws IOException {
+        //将字符串处理为imageInfo
+        ImageInfo imageInfo = processImageInfo(imageData, width, height);
+
+        return Response.newSuccessResponse(getRegisterResult(id, imageInfo));
+    }
+
+    /* 获取注册结果 */
+    private Map<String,String> getRegisterResult(String id, ImageInfo imageInfo) throws IOException {
+        Map<String, String> map = new HashMap<String, String>();
         //检测提取人脸特征，未提取到人脸返回fail
-        List<FaceInfo> faceInfos = faceEngineService.detectFaces(rgbData);
+        List<FaceInfo> faceInfos = faceEngineService.detectFaces(imageInfo);
         if (!faceInfos.isEmpty()) {
-            byte[] feature = faceEngineService.extractFaceFeature(rgbData, faceInfos.get(0));
+            byte[] feature = faceEngineService.extractFaceFeature(imageInfo, faceInfos.get(0));
 
             UserRamCache.UserInfo userInfo = new UserCompareInfo();
-            userInfo.setFaceId(name);
-            userInfo.setName(name);
-            userInfo.setFaceFeature(feature);
+            userInfo.setFaceId(id);
+            userInfo.setName(id);
 
             //获取当前系统时间
             Date date = new Date();
@@ -303,10 +318,23 @@ public class FaceController {
 
             userInfo.setRegisterTime(day);
             UserRamCache.addUser(userInfo);
+
+            //将人脸图片以字符串形式保存到本地
+            //String fileName = id;
+            //String filePath = this.getClass().getResource("/").getPath();
+            //File record = new File(filePath,fileName);
+            //BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(record)));
+            //writer.write(imageInfo.toString());
+            //writer.flush();
+            //writer.close();
+            map.put("success", "true");
+        }
+        map.put("fail", "false");
+        return map;
             HistoryRamCache.addHistory(name);
             return Response.newSuccessResponse(true);
         }
         return Response.newSuccessResponse(false);
-    }
 
+    }
 }
