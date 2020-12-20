@@ -28,6 +28,7 @@ import java.util.*;
 import java.text.SimpleDateFormat;
 
 
+
 @Controller
 @Slf4j
 public class FaceController {
@@ -45,7 +46,8 @@ public class FaceController {
         Map<String, String> fileMap = Maps.newHashMap();
         fileMap.put("zhao1", "赵丽颖");
         fileMap.put("yang1", "杨紫");
-
+        fileMap.put("wang", "wang");
+        fileMap.put("jie", "wang2");
         for (String f : fileMap.keySet()) {
             ClassPathResource resource = new ClassPathResource("static/images/" + f +  ".jpg");
             InputStream inputStream = null;
@@ -236,7 +238,8 @@ public class FaceController {
                 String day = dateFormat.format(date);
                 //为该id的签到历史添加一项
                 HistoryRamCache.addHistoryItem(id, new HistoryRamCache.History(id, day));
-
+                //为该id的签到次数加一
+                UserRamCache.getUserById(id).setCount(UserRamCache.getUserById(id).getCount()+1);
                 return true;
             }
         }
@@ -250,10 +253,10 @@ public class FaceController {
      * @param id 人名
      * @return 返回 {data:签到历史} 签到历史可空
      */
-    @RequestMapping(value = "/historyList", method = RequestMethod.GET)
+    @RequestMapping(value = "/historyList", method = RequestMethod.POST)
     @ResponseBody
     public Response<List<HistoryRamCache.History>> historyList(String id) {
-        if(HistoryRamCache.getHistoryList(id) == null) {
+        if(!id.equals("admin") || HistoryRamCache.getHistoryList(id) == null) {
             return Response.newSuccessResponse(null);
         }
         return Response.newSuccessResponse(HistoryRamCache.getHistoryList(id));
@@ -278,7 +281,7 @@ public class FaceController {
     //TODO: 检查ID是否已存在
     @RequestMapping(value = "/register1", method = RequestMethod.POST)
     @ResponseBody
-    public Response<Map<String,String>> registerWithImage(String image, String id) throws IOException {
+    public Response<Boolean> register1(String image, String name) {
         //将字符串解码回二进制图片数据
         byte[] bytes = Base64Util.base64ToBytes(image);
         ImageInfo rgbData = ImageFactory.getRGBData(bytes);
@@ -304,23 +307,34 @@ public class FaceController {
         if (!faceInfos.isEmpty()) {
             byte[] feature = faceEngineService.extractFaceFeature(imageInfo, faceInfos.get(0));
 
-            UserRamCache.UserInfo userInfo = new UserRamCache.UserInfo();
+            UserRamCache.UserInfo userInfo = new UserCompareInfo();
             userInfo.setFaceId(id);
             userInfo.setName(id);
-            userInfo.setFaceFeature(feature);
+
+            //获取当前系统时间
+            Date date = new Date();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String day = dateFormat.format(date);
+
+            userInfo.setRegisterTime(day);
             UserRamCache.addUser(userInfo);
 
             //将人脸图片以字符串形式保存到本地
-            String fileName = id;
-            String filePath = this.getClass().getResource("/").getPath();
-            File record = new File(filePath,fileName);
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(record)));
-            writer.write(imageInfo.toString());
-            writer.flush();
-            writer.close();
+            //String fileName = id;
+            //String filePath = this.getClass().getResource("/").getPath();
+            //File record = new File(filePath,fileName);
+            //BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(record)));
+            //writer.write(imageInfo.toString());
+            //writer.flush();
+            //writer.close();
             map.put("success", "true");
         }
         map.put("fail", "false");
         return map;
+            HistoryRamCache.addHistory(name);
+            return Response.newSuccessResponse(true);
+        }
+        return Response.newSuccessResponse(false);
+
     }
 }
