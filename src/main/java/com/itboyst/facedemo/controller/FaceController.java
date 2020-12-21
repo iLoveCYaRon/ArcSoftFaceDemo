@@ -179,13 +179,20 @@ public class FaceController {
     @RequestMapping(value = "/sign", method = RequestMethod.POST)
     @ResponseBody
     public Response<Boolean> signWithImage(String image, String id) {
+        Long Afterreceive = System.currentTimeMillis();
+        logger.info("AfterReceive: " + Afterreceive.toString());
+        log.info(getSystemTime() + " for sign");
+
         if(UserRamCache.getUserById(id) == null) {
             return Response.newSuccessResponse(false);
         }
 
         //将字符串解码回二进制图片数据
+        Long time1 = System.currentTimeMillis();
         byte[] bytes = Base64Util.base64ToBytes(image);
         ImageInfo rgbData = ImageFactory.getRGBData(bytes);
+        Long time2 = System.currentTimeMillis() - time1;
+        logger.info("ToRgb: " + time2);
 
         return Response.newSuccessResponse(getSignResult(id, rgbData));
     }
@@ -203,6 +210,10 @@ public class FaceController {
     @RequestMapping(value = "/sign2", method = RequestMethod.POST)
     @ResponseBody
     public Response<Boolean> signWithImageData(String imageData,int width, int height, String id) throws IOException, ClassNotFoundException {
+        Long Afterreceive = System.currentTimeMillis();
+        logger.info("AfterReceive: " + Afterreceive.toString());
+        log.info(getSystemTime() + " for sign2");
+
         if(UserRamCache.getUserById(id) == null) {
             return Response.newSuccessResponse(false);
         }
@@ -232,19 +243,28 @@ public class FaceController {
     private Boolean getSignResult(String id, ImageInfo imageInfo) {
 
         //检测提取人脸特征，未提取到人脸或者人脸不匹配返回false
+        Long time1 = System.currentTimeMillis();
         List<FaceInfo> faceInfos = faceEngineService.detectFaces(imageInfo);
+        Long time2 = System.currentTimeMillis() - time1;
+        logger.info("DetectFeature: " + time2);
         if (!faceInfos.isEmpty()) {
+            Long time5 = System.currentTimeMillis();
             byte[] feature = faceEngineService.extractFaceFeature(imageInfo, faceInfos.get(0));
-            Long time1 = System.currentTimeMillis();
+            Long time6 = System.currentTimeMillis() - time5;
+            logger.info("extraFeature: " + time6);
+
+
+            Long time3 = System.currentTimeMillis();
             UserCompareInfo temp = faceEngineService.faceRecognition(feature, UserRamCache.getUserById(id), 0.8f);
-            Long time2 = System.currentTimeMillis() - time1;
-            logger.info("recognizeFeature: " + time2 );
+            Long time4 = System.currentTimeMillis() - time1;
+            logger.info("recognizeFeature: " + time4);
             if ( temp!= null) {
 
                 //获取当前系统时间
                 Date date = new Date();
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String day = dateFormat.format(date);
+                //System.out.println(day);
                 //为该id的签到历史添加一项
                 HistoryRamCache.addHistoryItem(id, new HistoryRamCache.History(id, day));
                 //为该id的签到次数加一
@@ -265,6 +285,10 @@ public class FaceController {
     @RequestMapping(value = "/historyList", method = RequestMethod.POST)
     @ResponseBody
     public Response<List<HistoryRamCache.History>> historyList(String id) {
+        Long time = System.currentTimeMillis();
+        logger.info("空载接收： "+ time.toString());
+        log.info(getSystemTime() + " for historyList");
+
         if(!id.equals("admin") || HistoryRamCache.getHistoryList(id) == null) {
             return Response.newSuccessResponse(null);
         }
@@ -280,6 +304,9 @@ public class FaceController {
     @RequestMapping(value = "/studentList", method = RequestMethod.GET)
     @ResponseBody
     public Response<List<UserRamCache.UserInfo>> studentList() {
+
+        log.info(getSystemTime() + " for studentList");
+
         if (UserRamCache.getUserList() == null) {
             return Response.newSuccessResponse(null);
         }
@@ -291,6 +318,9 @@ public class FaceController {
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     @ResponseBody
     public Response<Boolean> register1(String image, String id) throws IOException {
+
+        log.info(getSystemTime() + " for register");
+
         //将字符串解码回二进制图片数据
 
         byte[] bytes = Base64Util.base64ToBytes(image);
@@ -305,6 +335,9 @@ public class FaceController {
     @RequestMapping(value = "/register2", method = RequestMethod.POST)
     @ResponseBody
     public Response<Boolean> registerWithData(String imageData,int width, int height, String id) throws IOException {
+
+        log.info(System.currentTimeMillis() + " for register2");
+
         //将字符串处理为imageInfo
         ImageInfo imageInfo = processImageInfo(imageData, width, height);
 
@@ -317,7 +350,7 @@ public class FaceController {
         Long time1 = System.currentTimeMillis();
         List<FaceInfo> faceInfos = faceEngineService.detectFaces(imageInfo);
         Long time2 = System.currentTimeMillis() - time1;
-        logger.info("DetectFace: " + time2);
+        log.info("DetectFace: " + time2);
 
         if (!faceInfos.isEmpty()) {
             Long time3 = System.currentTimeMillis();
@@ -346,5 +379,14 @@ public class FaceController {
         }
         return false;
 
+    }
+
+    private String getSystemTime() {
+        //获取当前系统时间
+        Date date = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
+        String day = dateFormat.format(date);
+
+        return day;
     }
 }
